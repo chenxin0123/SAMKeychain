@@ -28,9 +28,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 #ifdef SAMKEYCHAIN_SYNCHRONIZATION_AVAILABLE
 typedef NS_ENUM(NSUInteger, SAMKeychainQuerySynchronizationMode) {
-	SAMKeychainQuerySynchronizationModeAny,
-	SAMKeychainQuerySynchronizationModeNo,
-	SAMKeychainQuerySynchronizationModeYes
+	SAMKeychainQuerySynchronizationModeAny, // iCloud+Non-iClound
+	SAMKeychainQuerySynchronizationModeNo,  // Non-iClound
+	SAMKeychainQuerySynchronizationModeYes  // iCloud
 };
 #endif
 

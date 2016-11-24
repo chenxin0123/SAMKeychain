@@ -9,6 +9,17 @@
 #import "SAMKeychain.h"
 #import "SAMKeychainQuery.h"
 
+/**
+ acct = 88135d81f076ef3dd17398067e30dbd8;
+ agrp = "44HU6MVQN2.com.westcoast.ouyu";
+ cdat = "2016-11-25 02:45:47 +0000";
+ mdat = "2016-11-25 02:45:47 +0000";
+ pdmn = ak;
+ svce = ea490531f81dbb4c69eea13a0eef0463;
+ sync = 0;
+ tomb = 0;
+ */
+
 NSString *const kSAMKeychainErrorDomain = @"com.samsoffes.samkeychain";
 NSString *const kSAMKeychainAccountKey = @"acct";
 NSString *const kSAMKeychainCreatedAtKey = @"cdat";
@@ -104,7 +115,7 @@ NSString *const kSAMKeychainWhereKey = @"svce";
 	return [self accountsForService:serviceName error:nil];
 }
 
-
+/// 返回查询结果数组
 + (nullable NSArray *)accountsForService:(nullable NSString *)serviceName error:(NSError *__autoreleasing *)error {
     SAMKeychainQuery *query = [[SAMKeychainQuery alloc] init];
     query.service = serviceName;
@@ -113,6 +124,8 @@ NSString *const kSAMKeychainWhereKey = @"svce";
 
 
 #if __IPHONE_4_0 && TARGET_OS_IPHONE
+/// https://developer.apple.com/library/content/documentation/Security/Conceptual/keychainServConcepts/02concepts/concepts.html#//apple_ref/doc/uid/TP30000897-CH204-TP9
+/// When Unlocked is the default accessibility when you do not specify the kSecAttrAccessible attribute for a keychain item.
 + (CFTypeRef)accessibilityType {
 	return SAMKeychainAccessibilityType;
 }

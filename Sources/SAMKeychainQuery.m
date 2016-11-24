@@ -26,7 +26,11 @@
 
 #pragma mark - Public
 
+/// https://developer.apple.com/library/content/documentation/Security/Conceptual/keychainServConcepts/02concepts/concepts.html#//apple_ref/doc/uid/TP30000897-CH204-TP9
+
+/// 保存
 - (BOOL)save:(NSError *__autoreleasing *)error {
+	/// 验证service account passwordData 均不能为空
 	OSStatus status = SAMKeychainErrorBadArguments;
 	if (!self.service || !self.account || !self.passwordData) {
 		if (error) {
@@ -35,7 +39,13 @@
 		return NO;
 	}
 	NSMutableDictionary *query = nil;
+	
+	/// 先查找是否已存在
+	/// 已存在的话searchQuery添加kSecValueData:passwordData 调用SecItemUpdate
+	/// 不存在的话kSecAttrLabel:self.label kSecValueData:passwordData 调用SecItemAdd
+	/// label只在添加的时候有效
 	NSMutableDictionary * searchQuery = [self query];
+	// retrieve a keychain item’s attributes and/or data.
 	status = SecItemCopyMatching((__bridge CFDictionaryRef)searchQuery, nil);
 	if (status == errSecSuccess) {//item already exists, update it!
 		query = [[NSMutableDictionary alloc]init];
@@ -46,6 +56,7 @@
 			[query setObject:(__bridge id)accessibilityType forKey:(__bridge id)kSecAttrAccessible];
 		}
 #endif
+		// modify a keychain item in place
 		status = SecItemUpdate((__bridge CFDictionaryRef)(searchQuery), (__bridge CFDictionaryRef)(query));
 	}else if(status == errSecItemNotFound){//item not found, create it!
 		query = [self query];
@@ -59,14 +70,16 @@
 			[query setObject:(__bridge id)accessibilityType forKey:(__bridge id)kSecAttrAccessible];
 		}
 #endif
+		// create a new keychain item.
 		status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
 	}
 	if (status != errSecSuccess && error != NULL) {
 		*error = [[self class] errorWithCode:status];
 	}
-	return (status == errSecSuccess);}
+	return (status == errSecSuccess);
+}
 
-
+/// 删除 调用SecItemDelete
 - (BOOL)deleteItem:(NSError *__autoreleasing *)error {
 	OSStatus status = SAMKeychainErrorBadArguments;
 	if (!self.service || !self.account) {
@@ -78,6 +91,7 @@
 
 	NSMutableDictionary *query = [self query];
 #if TARGET_OS_IPHONE
+	// remove a keychain item
 	status = SecItemDelete((__bridge CFDictionaryRef)query);
 #else
 	// On Mac OS, SecItemDelete will not delete a key created in a different
@@ -105,7 +119,10 @@
 	return (status == errSecSuccess);
 }
 
-
+/// kSecReturnAttributes:YES
+/// kSecMatchLimit:kSecMatchLimitAll
+/// kSecAttrAccessible:
+/// 返回结果数组
 - (nullable NSArray *)fetchAll:(NSError *__autoreleasing *)error {
 	NSMutableDictionary *query = [self query];
 	[query setObject:@YES forKey:(__bridge id)kSecReturnAttributes];
@@ -127,8 +144,12 @@
 	return (__bridge_transfer NSArray *)result;
 }
 
-
+/// kSecReturnData:YES
+/// kSecMatchLimit:kSecMatchLimitOne
+/// service和account不能为空
+/// 结果保存在passwordData
 - (BOOL)fetch:(NSError *__autoreleasing *)error {
+	
 	OSStatus status = SAMKeychainErrorBadArguments;
 	if (!self.service || !self.account) {
 		if (error) {
@@ -156,6 +177,7 @@
 
 
 #pragma mark - Accessors
+/// 设置的值赋给passwordData 并没有save
 
 - (void)setPasswordObject:(id<NSCoding>)object {
 	self.passwordData = [NSKeyedArchiver archivedDataWithRootObject:object];
@@ -200,6 +222,12 @@
 
 #pragma mark - Private
 
+/// 返回查询条件字典
+/// kSecClass:kSecClassGenericPassword
+/// kSecAttrService:
+/// kSecAttrAccount:
+/// kSecAttrAccessGroup:这个不一定有
+/// kSecAttrSynchronizable:
 - (NSMutableDictionary *)query {
 	NSMutableDictionary *dictionary = [NSMutableDictionary dictionaryWithCapacity:3];
 	[dictionary setObject:(__bridge id)kSecClassGenericPassword forKey:(__bridge id)kSecClass];
@@ -246,7 +274,7 @@
 	return dictionary;
 }
 
-
+/// 根据code返回NSError
 + (NSError *)errorWithCode:(OSStatus) code {
 	static dispatch_once_t onceToken;
 	static NSBundle *resourcesBundle = nil;
